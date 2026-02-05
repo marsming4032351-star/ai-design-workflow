@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 驱动设计工作流系统架构</title>
+    
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                fontSize: '14px'
+            }
+        });
+    </script>
+    
+    <style>
+        @media print {
+            @page {
+                size: A4;
+                margin: 1.5cm;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            h1 {
+                page-break-before: always;
+            }
+            h1:first-of-type {
+                page-break-before: avoid;
+            }
+            pre, .mermaid {
+                page-break-inside: avoid;
+            }
+        }
+        
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.8;
+            color: #333;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #fff;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 15px;
+            margin-top: 50px;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+        
+        h2 {
+            color: #34495e;
+            border-bottom: 2px solid #95a5a6;
+            padding-bottom: 10px;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+        
+        h3 {
+            color: #7f8c8d;
+            margin-top: 30px;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        p {
+            margin: 15px 0;
+            text-align: justify;
+        }
+        
+        code {
+            background-color: #f4f4f4;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: "Monaco", "Courier New", monospace;
+            font-size: 13px;
+            color: #e74c3c;
+        }
+        
+        pre {
+            background-color: #f8f8f8;
+            border: 1px solid #ddd;
+            border-left: 4px solid #3498db;
+            border-radius: 5px;
+            padding: 20px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+        
+        pre code {
+            background: none;
+            padding: 0;
+            color: #333;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 25px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px 15px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .mermaid {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 30px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        ul, ol {
+            margin: 15px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            margin: 8px 0;
+        }
+        
+        blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 20px;
+            margin: 20px 0;
+            color: #666;
+            font-style: italic;
+        }
+        
+        hr {
+            border: none;
+            border-top: 2px solid #ecf0f1;
+            margin: 40px 0;
+        }
+        
+        /* 打印按钮 */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .print-button:hover {
+            background: #2980b9;
+        }
+        
+        @media print {
+            .print-button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button" onclick="window.print()">🖨️ 打印/导出 PDF</button>
+    
+    <h1 id="ai">AI 驱动设计工作流系统架构</h1>
+<h2 id="1">1. 系统总览架构图</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">TB</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;知识层 Knowledge Layer&quot;</span>
+<span class="w">        </span><span class="n">DL</span><span class="o">[</span><span class="n">知识分发总监&lt;br/&gt;Data Librarian&lt;br/&gt;TRACE框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">KB</span><span class="o">[</span><span class="n">(知识库&lt;br/&gt;Design Assets&lt;br/&gt;Trends &amp; Cases)</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;智能体层 Agent Layer&quot;</span>
+<span class="w">        </span><span class="n">A1</span><span class="o">[</span><span class="n">方案资讯官&lt;br/&gt;The Analyst&lt;br/&gt;BROKE框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">A2</span><span class="o">[</span><span class="n">彩平绘制师&lt;br/&gt;The Draftsman&lt;br/&gt;COSTAR框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">A3</span><span class="o">[</span><span class="n">三维建模师&lt;br/&gt;The Architect&lt;br/&gt;RTGO框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">A4</span><span class="o">[</span><span class="n">视觉艺术家&lt;br/&gt;The Stylist&lt;br/&gt;CARE框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">A5</span><span class="o">[</span><span class="n">杂志摄影师&lt;br/&gt;The Photographer&lt;br/&gt;RTF框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">A6</span><span class="o">[</span><span class="n">软装排版师&lt;br/&gt;The Curator&lt;br/&gt;ROSES框架</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;输入层 Input Layer&quot;</span>
+<span class="w">        </span><span class="n">I1</span><span class="o">[</span><span class="n">项目需求</span><span class="o">]</span>
+<span class="w">        </span><span class="n">I2</span><span class="o">[</span><span class="n">CAD线框图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">I3</span><span class="o">[</span><span class="n">参考案例</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;输出层 Output Layer&quot;</span>
+<span class="w">        </span><span class="n">O1</span><span class="o">[</span><span class="n">策略报告</span><span class="o">]</span>
+<span class="w">        </span><span class="n">O2</span><span class="o">[</span><span class="n">彩色平面图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">O3</span><span class="o">[</span><span class="n">3D透视图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">O4</span><span class="o">[</span><span class="n">风格效果图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">O5</span><span class="o">[</span><span class="n">摄影级渲染</span><span class="o">]</span>
+<span class="w">        </span><span class="n">O6</span><span class="o">[</span><span class="n">方案排版</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">I1</span><span class="w"> </span><span class="c1">--&gt; A1</span>
+<span class="w">    </span><span class="n">I2</span><span class="w"> </span><span class="c1">--&gt; A2</span>
+<span class="w">    </span><span class="n">I3</span><span class="w"> </span><span class="c1">--&gt; DL</span>
+
+<span class="w">    </span><span class="n">DL</span><span class="w"> </span><span class="c1">--&gt; KB</span>
+<span class="w">    </span><span class="n">KB</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="n">知识分发</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A1</span>
+<span class="w">    </span><span class="n">KB</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="n">知识分发</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A2</span>
+<span class="w">    </span><span class="n">KB</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="n">知识分发</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A3</span>
+<span class="w">    </span><span class="n">KB</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="n">知识分发</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A4</span>
+<span class="w">    </span><span class="n">KB</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="n">知识分发</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A5</span>
+<span class="w">    </span><span class="n">KB</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="n">知识分发</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">A6</span>
+
+<span class="w">    </span><span class="n">A1</span><span class="w"> </span><span class="c1">--&gt; O1</span>
+<span class="w">    </span><span class="n">A1</span><span class="w"> </span><span class="c1">--&gt; A2</span>
+<span class="w">    </span><span class="n">A2</span><span class="w"> </span><span class="c1">--&gt; O2</span>
+<span class="w">    </span><span class="n">A2</span><span class="w"> </span><span class="c1">--&gt; A3</span>
+<span class="w">    </span><span class="n">A3</span><span class="w"> </span><span class="c1">--&gt; O3</span>
+<span class="w">    </span><span class="n">A3</span><span class="w"> </span><span class="c1">--&gt; A4</span>
+<span class="w">    </span><span class="n">A4</span><span class="w"> </span><span class="c1">--&gt; O4</span>
+<span class="w">    </span><span class="n">A4</span><span class="w"> </span><span class="c1">--&gt; A5</span>
+<span class="w">    </span><span class="n">A5</span><span class="w"> </span><span class="c1">--&gt; O5</span>
+<span class="w">    </span><span class="n">A5</span><span class="w"> </span><span class="c1">--&gt; A6</span>
+<span class="w">    </span><span class="n">A6</span><span class="w"> </span><span class="c1">--&gt; O6</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">DL</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFD700</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#FF8C00</span><span class="p">,</span><span class="n">stroke</span><span class="o">-</span><span class="nl">width</span><span class="p">:</span><span class="mi">3</span><span class="n">px</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A1</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#E8F4F8</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#4A90E2</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A2</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFF4E6</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#F5A623</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A3</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#F0E6FF</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#9013FE</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A4</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFE6F0</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#E91E63</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A5</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#E6F7FF</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#00BCD4</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A6</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#F0FFF0</span><span class="p">,</span><span class="nl">stroke</span><span class="p">:</span><span class="n">#4CAF50</span>
+</code></pre></div>
+
+<h2 id="2">2. 工作流时序图</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">sequenceDiagram</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">User</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">用户</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">DL</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">知识分发总监</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A1</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">方案资讯官</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A2</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">彩平绘制师</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A3</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">三维建模师</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A4</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">视觉艺术家</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A5</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">杂志摄影师</span>
+<span class="w">    </span><span class="n">participant</span><span class="w"> </span><span class="n">A6</span><span class="w"> </span><span class="kr">as</span><span class="w"> </span><span class="err">软装排版师</span>
+
+<span class="w">    </span><span class="n">User</span><span class="o">-&gt;&gt;</span><span class="n">DL</span><span class="o">:</span><span class="w"> </span><span class="err">上传设计趋势资料</span>
+<span class="w">    </span><span class="n">DL</span><span class="o">-&gt;&gt;</span><span class="n">DL</span><span class="o">:</span><span class="w"> </span><span class="n">TRACE解析</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="n">Task</span><span class="o">-</span><span class="n">Request</span><span class="o">-</span><span class="n">Action</span><span class="o">-</span><span class="n">Context</span><span class="o">-</span><span class="n">Example</span><span class="p">)</span>
+<span class="w">    </span><span class="n">DL</span><span class="o">-&gt;&gt;</span><span class="n">A1</span><span class="o">:</span><span class="w"> </span><span class="err">分发策略知识卡片</span>
+<span class="w">    </span><span class="n">DL</span><span class="o">-&gt;&gt;</span><span class="n">A4</span><span class="o">:</span><span class="w"> </span><span class="err">分发材质库更新</span>
+
+<span class="w">    </span><span class="n">User</span><span class="o">-&gt;&gt;</span><span class="n">A1</span><span class="o">:</span><span class="w"> </span><span class="err">输入项目需求</span>
+<span class="w">    </span><span class="n">A1</span><span class="o">-&gt;&gt;</span><span class="n">A1</span><span class="o">:</span><span class="w"> </span><span class="n">BROKE分析</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="err">背景</span><span class="o">-</span><span class="err">角色</span><span class="o">-</span><span class="err">目标</span><span class="o">-</span><span class="err">关键结果</span><span class="o">-</span><span class="err">演变</span><span class="p">)</span>
+<span class="w">    </span><span class="n">A1</span><span class="o">-&gt;&gt;</span><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="err">输出策略报告</span>
+
+<span class="w">    </span><span class="n">User</span><span class="o">-&gt;&gt;</span><span class="n">A2</span><span class="o">:</span><span class="w"> </span><span class="err">上传</span><span class="n">CAD线框图</span>
+<span class="w">    </span><span class="n">A2</span><span class="o">-&gt;&gt;</span><span class="n">A2</span><span class="o">:</span><span class="w"> </span><span class="n">COSTAR处理</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="err">上下文</span><span class="o">-</span><span class="err">目标</span><span class="o">-</span><span class="err">风格</span><span class="o">-</span><span class="err">语气</span><span class="o">-</span><span class="err">受众</span><span class="o">-</span><span class="err">回复</span><span class="p">)</span>
+<span class="w">    </span><span class="n">A2</span><span class="o">-&gt;&gt;</span><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="err">输出彩色平面图</span>
+
+<span class="w">    </span><span class="n">A2</span><span class="o">-&gt;&gt;</span><span class="n">A3</span><span class="o">:</span><span class="w"> </span><span class="err">传递</span><span class="mi">2</span><span class="n">D布局</span>
+<span class="w">    </span><span class="n">A3</span><span class="o">-&gt;&gt;</span><span class="n">A3</span><span class="o">:</span><span class="w"> </span><span class="n">RTGO建模</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="err">角色</span><span class="o">-</span><span class="err">任务</span><span class="o">-</span><span class="err">目标</span><span class="o">-</span><span class="err">操作</span><span class="p">)</span>
+<span class="w">    </span><span class="n">A3</span><span class="o">-&gt;&gt;</span><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="err">输出</span><span class="mi">3</span><span class="n">D透视图</span>
+
+<span class="w">    </span><span class="n">A3</span><span class="o">-&gt;&gt;</span><span class="n">A4</span><span class="o">:</span><span class="w"> </span><span class="err">传递</span><span class="mi">3</span><span class="n">D模型</span>
+<span class="w">    </span><span class="n">A4</span><span class="o">-&gt;&gt;</span><span class="n">A4</span><span class="o">:</span><span class="w"> </span><span class="n">CARE渲染</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="err">上下文</span><span class="o">-</span><span class="err">行动</span><span class="o">-</span><span class="err">结果</span><span class="o">-</span><span class="err">示例</span><span class="p">)</span>
+<span class="w">    </span><span class="n">A4</span><span class="o">-&gt;&gt;</span><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="err">输出风格效果图</span>
+
+<span class="w">    </span><span class="n">A4</span><span class="o">-&gt;&gt;</span><span class="n">A5</span><span class="o">:</span><span class="w"> </span><span class="err">传递渲染结果</span>
+<span class="w">    </span><span class="n">A5</span><span class="o">-&gt;&gt;</span><span class="n">A5</span><span class="o">:</span><span class="w"> </span><span class="n">RTF摄影</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="err">角色</span><span class="o">-</span><span class="err">任务</span><span class="o">-</span><span class="err">格式</span><span class="p">)</span>
+<span class="w">    </span><span class="n">A5</span><span class="o">-&gt;&gt;</span><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="err">输出摄影级渲染</span>
+
+<span class="w">    </span><span class="n">A5</span><span class="o">-&gt;&gt;</span><span class="n">A6</span><span class="o">:</span><span class="w"> </span><span class="err">传递最终图像</span>
+<span class="w">    </span><span class="n">A6</span><span class="o">-&gt;&gt;</span><span class="n">A6</span><span class="o">:</span><span class="w"> </span><span class="n">ROSES排版</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="p">(</span><span class="err">角色</span><span class="o">-</span><span class="err">目标</span><span class="o">-</span><span class="err">场景</span><span class="o">-</span><span class="err">方案</span><span class="o">-</span><span class="err">步骤</span><span class="p">)</span>
+<span class="w">    </span><span class="n">A6</span><span class="o">-&gt;&gt;</span><span class="n">User</span><span class="o">:</span><span class="w"> </span><span class="err">输出完整方案</span>
+</code></pre></div>
+
+<h2 id="3">3. 提示词框架映射矩阵</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">graph</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;阶段 0: 前期策划&quot;</span>
+<span class="w">        </span><span class="n">F1</span><span class="o">[</span><span class="n">BROKE框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F1</span><span class="w"> </span><span class="c1">--&gt; F1A[Background 背景]</span>
+<span class="w">        </span><span class="n">F1</span><span class="w"> </span><span class="c1">--&gt; F1B[Role 角色]</span>
+<span class="w">        </span><span class="n">F1</span><span class="w"> </span><span class="c1">--&gt; F1C[Objectives 目标]</span>
+<span class="w">        </span><span class="n">F1</span><span class="w"> </span><span class="c1">--&gt; F1D[Key Results 关键结果]</span>
+<span class="w">        </span><span class="n">F1</span><span class="w"> </span><span class="c1">--&gt; F1E[Evolve 演变]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;阶段 1: 平面表达&quot;</span>
+<span class="w">        </span><span class="n">F2</span><span class="o">[</span><span class="n">COSTAR框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F2</span><span class="w"> </span><span class="c1">--&gt; F2A[Context 上下文]</span>
+<span class="w">        </span><span class="n">F2</span><span class="w"> </span><span class="c1">--&gt; F2B[Objective 目标]</span>
+<span class="w">        </span><span class="n">F2</span><span class="w"> </span><span class="c1">--&gt; F2C[Style 风格]</span>
+<span class="w">        </span><span class="n">F2</span><span class="w"> </span><span class="c1">--&gt; F2D[Tone 语气]</span>
+<span class="w">        </span><span class="n">F2</span><span class="w"> </span><span class="c1">--&gt; F2E[Audience 受众]</span>
+<span class="w">        </span><span class="n">F2</span><span class="w"> </span><span class="c1">--&gt; F2F[Response 回复]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;阶段 2: 空间转换&quot;</span>
+<span class="w">        </span><span class="n">F3</span><span class="o">[</span><span class="n">RTGO框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F3</span><span class="w"> </span><span class="c1">--&gt; F3A[Role 角色]</span>
+<span class="w">        </span><span class="n">F3</span><span class="w"> </span><span class="c1">--&gt; F3B[Task 任务]</span>
+<span class="w">        </span><span class="n">F3</span><span class="w"> </span><span class="c1">--&gt; F3C[Goal 目标]</span>
+<span class="w">        </span><span class="n">F3</span><span class="w"> </span><span class="c1">--&gt; F3D[Operation 操作]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;阶段 3: 风格迭代&quot;</span>
+<span class="w">        </span><span class="n">F4</span><span class="o">[</span><span class="n">CARE框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F4</span><span class="w"> </span><span class="c1">--&gt; F4A[Context 上下文]</span>
+<span class="w">        </span><span class="n">F4</span><span class="w"> </span><span class="c1">--&gt; F4B[Action 行动]</span>
+<span class="w">        </span><span class="n">F4</span><span class="w"> </span><span class="c1">--&gt; F4C[Result 结果]</span>
+<span class="w">        </span><span class="n">F4</span><span class="w"> </span><span class="c1">--&gt; F4D[Example 示例]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;阶段 4: 摄影表达&quot;</span>
+<span class="w">        </span><span class="n">F5</span><span class="o">[</span><span class="n">RTF框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F5</span><span class="w"> </span><span class="c1">--&gt; F5A[Role 角色]</span>
+<span class="w">        </span><span class="n">F5</span><span class="w"> </span><span class="c1">--&gt; F5B[Task 任务]</span>
+<span class="w">        </span><span class="n">F5</span><span class="w"> </span><span class="c1">--&gt; F5C[Format 格式]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;阶段 5: 后期输出&quot;</span>
+<span class="w">        </span><span class="n">F6</span><span class="o">[</span><span class="n">ROSES框架</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F6</span><span class="w"> </span><span class="c1">--&gt; F6A[Role 角色]</span>
+<span class="w">        </span><span class="n">F6</span><span class="w"> </span><span class="c1">--&gt; F6B[Objective 目标]</span>
+<span class="w">        </span><span class="n">F6</span><span class="w"> </span><span class="c1">--&gt; F6C[Scenario 场景]</span>
+<span class="w">        </span><span class="n">F6</span><span class="w"> </span><span class="c1">--&gt; F6D[Expected Solution 方案]</span>
+<span class="w">        </span><span class="n">F6</span><span class="w"> </span><span class="c1">--&gt; F6E[Steps 步骤]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F1</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#E8F4F8</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F2</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFF4E6</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F3</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#F0E6FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F4</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFE6F0</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F5</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#E6F7FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">F6</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#F0FFF0</span>
+</code></pre></div>
+
+<h2 id="4-trace">4. 知识分发机制 (TRACE)</h2>
+<div class="codehilite"><pre><span></span><code><span class="nf">graph</span><span class="w"> </span><span class="n">TD</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;知识输入&quot;</span>
+<span class="w">        </span><span class="n">IN1</span><span class="p">[</span><span class="err">大师作品集</span><span class="p">]</span>
+<span class="w">        </span><span class="n">IN2</span><span class="p">[</span><span class="err">行业报告</span><span class="p">]</span>
+<span class="w">        </span><span class="n">IN3</span><span class="p">[</span><span class="err">设计趋势</span><span class="p">]</span>
+<span class="w">        </span><span class="n">IN4</span><span class="p">[</span><span class="err">材质库</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;TRACE解析引擎&quot;</span>
+<span class="w">        </span><span class="n">T</span><span class="p">[</span><span class="n">Task</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">提取核心设计语言</span><span class="p">]</span>
+<span class="w">        </span><span class="n">R</span><span class="p">[</span><span class="n">Request</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">转化为量化参数</span><span class="p">]</span>
+<span class="w">        </span><span class="n">A</span><span class="p">[</span><span class="n">Action</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">封装为知识卡片</span><span class="p">]</span>
+<span class="w">        </span><span class="n">C</span><span class="p">[</span><span class="n">Context</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">关联机器人环境</span><span class="p">]</span>
+<span class="w">        </span><span class="n">E</span><span class="p">[</span><span class="n">Example</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">生成参考样张</span><span class="p">]</span>
+
+<span class="w">        </span><span class="n">T</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">E</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;知识卡片库&quot;</span>
+<span class="w">        </span><span class="n">KC1</span><span class="p">[</span><span class="err">审美参数卡片</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="n">f</span><span class="o">/</span><span class="mf">2.8</span><span class="err">景深效果</span><span class="p">]</span>
+<span class="w">        </span><span class="n">KC2</span><span class="p">[</span><span class="err">材质参数卡片</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">微水泥反射率</span><span class="p">]</span>
+<span class="w">        </span><span class="n">KC3</span><span class="p">[</span><span class="err">趋势策略卡片</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="mi">2025</span><span class="err">米兰展</span><span class="p">]</span>
+<span class="w">        </span><span class="n">KC4</span><span class="p">[</span><span class="err">摄影参数卡片</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">焦段</span><span class="o">-</span><span class="err">构图</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;智能体订阅&quot;</span>
+<span class="w">        </span><span class="n">S1</span><span class="p">[</span><span class="err">方案资讯官</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">订阅趋势策略</span><span class="p">]</span>
+<span class="w">        </span><span class="n">S2</span><span class="p">[</span><span class="err">视觉艺术家</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">订阅材质库</span><span class="p">]</span>
+<span class="w">        </span><span class="n">S3</span><span class="p">[</span><span class="err">杂志摄影师</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">订阅摄影参数</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">IN1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">T</span>
+<span class="w">    </span><span class="n">IN2</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">T</span>
+<span class="w">    </span><span class="n">IN3</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">T</span>
+<span class="w">    </span><span class="n">IN4</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">T</span>
+
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">KC1</span>
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">KC2</span>
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">KC3</span>
+<span class="w">    </span><span class="n">E</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">KC4</span>
+
+<span class="w">    </span><span class="n">KC1</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="err">实时同步</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">S2</span>
+<span class="w">    </span><span class="n">KC2</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="err">实时同步</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">S2</span>
+<span class="w">    </span><span class="n">KC3</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="err">实时同步</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">S1</span>
+<span class="w">    </span><span class="n">KC4</span><span class="w"> </span><span class="o">-</span><span class="p">.</span><span class="err">实时同步</span><span class="p">.</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">S3</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">T</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">FFE6E6</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">R</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">FFF4E6</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">A</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">E6F7FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">C</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">F0E6FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">E</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">E6FFE6</span>
+</code></pre></div>
+
+<h2 id="5">5. 摄影美学控制系统</h2>
+<div class="codehilite"><pre><span></span><code><span class="nf">graph</span><span class="w"> </span><span class="n">TB</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;摄影参数控制&quot;</span>
+<span class="w">        </span><span class="n">P1</span><span class="p">[</span><span class="err">焦段控制</span><span class="p">]</span>
+<span class="w">        </span><span class="n">P2</span><span class="p">[</span><span class="err">光圈控制</span><span class="p">]</span>
+<span class="w">        </span><span class="n">P3</span><span class="p">[</span><span class="err">构图算法</span><span class="p">]</span>
+<span class="w">        </span><span class="n">P4</span><span class="p">[</span><span class="err">移轴逻辑</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;焦段映射&quot;</span>
+<span class="w">        </span><span class="n">F1</span><span class="p">[</span><span class="mi">16</span><span class="o">-</span><span class="mi">24</span><span class="n">mm</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">建筑张力</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">广角透视</span><span class="p">]</span>
+<span class="w">        </span><span class="n">F2</span><span class="p">[</span><span class="mi">50</span><span class="n">mm</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">人眼观察</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">自然视角</span><span class="p">]</span>
+<span class="w">        </span><span class="n">F3</span><span class="p">[</span><span class="mi">85</span><span class="n">mm</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">软装肌理</span><span class="o">&lt;</span><span class="n">br</span><span class="o">/&gt;</span><span class="err">细节特写</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;构图规则&quot;</span>
+<span class="w">        </span><span class="n">C1</span><span class="p">[</span><span class="err">三分法则</span><span class="p">]</span>
+<span class="w">        </span><span class="n">C2</span><span class="p">[</span><span class="err">黄金分割</span><span class="p">]</span>
+<span class="w">        </span><span class="n">C3</span><span class="p">[</span><span class="err">对称构图</span><span class="p">]</span>
+<span class="w">        </span><span class="n">C4</span><span class="p">[</span><span class="err">引导线</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;移轴修正&quot;</span>
+<span class="w">        </span><span class="n">TS1</span><span class="p">[</span><span class="err">垂直线条平行</span><span class="p">]</span>
+<span class="w">        </span><span class="n">TS2</span><span class="p">[</span><span class="err">透视畸变修正</span><span class="p">]</span>
+<span class="w">        </span><span class="n">TS3</span><span class="p">[</span><span class="err">专业建筑摄影</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="s">&quot;输出效果&quot;</span>
+<span class="w">        </span><span class="n">OUT1</span><span class="p">[</span><span class="err">杂志级视觉</span><span class="p">]</span>
+<span class="w">        </span><span class="n">OUT2</span><span class="p">[</span><span class="err">叙事化表达</span><span class="p">]</span>
+<span class="w">        </span><span class="n">OUT3</span><span class="p">[</span><span class="err">专业摄影质感</span><span class="p">]</span>
+<span class="w">    </span><span class="kd">end</span>
+
+<span class="w">    </span><span class="n">P1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F1</span>
+<span class="w">    </span><span class="n">P1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F2</span>
+<span class="w">    </span><span class="n">P1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">F3</span>
+
+<span class="w">    </span><span class="n">P3</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C1</span>
+<span class="w">    </span><span class="n">P3</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C2</span>
+<span class="w">    </span><span class="n">P3</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C3</span>
+<span class="w">    </span><span class="n">P3</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">C4</span>
+
+<span class="w">    </span><span class="n">P4</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">TS1</span>
+<span class="w">    </span><span class="n">P4</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">TS2</span>
+<span class="w">    </span><span class="n">P4</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">TS3</span>
+
+<span class="w">    </span><span class="n">F1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OUT1</span>
+<span class="w">    </span><span class="n">F2</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OUT2</span>
+<span class="w">    </span><span class="n">F3</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OUT3</span>
+<span class="w">    </span><span class="n">C1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OUT1</span>
+<span class="w">    </span><span class="n">TS1</span><span class="w"> </span><span class="o">--&gt;</span><span class="w"> </span><span class="n">OUT3</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P1</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">E6F7FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P2</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">FFF4E6</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P3</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">F0E6FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P4</span><span class="w"> </span><span class="n">fill</span><span class="o">:</span><span class="err">#</span><span class="n">FFE6F0</span>
+</code></pre></div>
+
+<h2 id="6">6. 六大智能体详细架构</h2>
+<div class="codehilite"><pre><span></span><code>mindmap
+  root((AI设计团队))
+    方案资讯官
+      BROKE框架
+        背景分析
+        角色定义
+        目标设定
+        关键结果
+        演变路径
+      输出
+        空间属性定义
+        人群画像
+        行业趋势
+        逻辑底座
+    彩平绘制师
+      COSTAR框架
+        上下文理解
+        目标明确
+        风格定义
+        语气控制
+        受众分析
+        回复格式
+      输出
+        材质感表达
+        阴影渲染
+        动线引导
+        彩色平面图
+    三维建模师
+      RTGO框架
+        角色设定
+        任务分解
+        目标确认
+        操作要求
+      技术
+        ControlNet
+        2D转3D
+        透视推演
+      输出
+        空间体量
+        3D透视图
+    视觉艺术家
+      CARE框架
+        上下文分析
+        行动计划
+        结果预期
+        示例参考
+      能力
+        材质迁移
+        灯光切换
+        风格控制
+      输出
+        艺术化效果图
+        一致性风格
+    杂志摄影师
+      RTF框架
+        角色定位
+        任务明确
+        格式规范
+      参数
+        焦段16-85mm
+        光圈f/1.4-f/16
+        构图规则
+      输出
+        叙事化视觉
+        摄影级渲染
+    软装排版师
+      ROSES框架
+        角色明确
+        目标设定
+        场景分析
+        方案设计
+        步骤规划
+      功能
+        单品提取
+        物料清单
+        视觉排版
+      输出
+        完整方案
+        专业排版
+</code></pre></div>
+
+<h2 id="7">7. 系统数据流图</h2>
+<div class="codehilite"><pre><span></span><code><span class="n">flowchart</span><span class="w"> </span><span class="n">LR</span>
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;输入数据&quot;</span>
+<span class="w">        </span><span class="n">D1</span><span class="o">[</span><span class="n">项目需求文档</span><span class="o">]</span>
+<span class="w">        </span><span class="n">D2</span><span class="o">[</span><span class="n">CAD线框图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">D3</span><span class="o">[</span><span class="n">参考图片</span><span class="o">]</span>
+<span class="w">        </span><span class="n">D4</span><span class="o">[</span><span class="n">设计趋势资料</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;处理流程&quot;</span>
+<span class="w">        </span><span class="n">P1</span><span class="o">[</span><span class="n">需求分析&lt;br/&gt;BROKE</span><span class="o">]</span>
+<span class="w">        </span><span class="n">P2</span><span class="o">[</span><span class="n">平面绘制&lt;br/&gt;COSTAR</span><span class="o">]</span>
+<span class="w">        </span><span class="n">P3</span><span class="o">[</span><span class="n">3D建模&lt;br/&gt;RTGO</span><span class="o">]</span>
+<span class="w">        </span><span class="n">P4</span><span class="o">[</span><span class="n">风格渲染&lt;br/&gt;CARE</span><span class="o">]</span>
+<span class="w">        </span><span class="n">P5</span><span class="o">[</span><span class="n">摄影优化&lt;br/&gt;RTF</span><span class="o">]</span>
+<span class="w">        </span><span class="n">P6</span><span class="o">[</span><span class="n">方案排版&lt;br/&gt;ROSES</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;中间产物&quot;</span>
+<span class="w">        </span><span class="n">M1</span><span class="o">[</span><span class="n">策略报告</span><span class="o">]</span>
+<span class="w">        </span><span class="n">M2</span><span class="o">[</span><span class="n">彩色平面图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">M3</span><span class="o">[</span><span class="n">3D透视图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">M4</span><span class="o">[</span><span class="n">风格效果图</span><span class="o">]</span>
+<span class="w">        </span><span class="n">M5</span><span class="o">[</span><span class="n">摄影级渲染</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">subgraph</span><span class="w"> </span><span class="ss">&quot;最终交付&quot;</span>
+<span class="w">        </span><span class="n">F1</span><span class="o">[</span><span class="n">完整设计方案</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F2</span><span class="o">[</span><span class="n">物料清单</span><span class="o">]</span>
+<span class="w">        </span><span class="n">F3</span><span class="o">[</span><span class="n">视觉排版</span><span class="o">]</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="n">D1</span><span class="w"> </span><span class="c1">--&gt; P1</span>
+<span class="w">    </span><span class="n">D2</span><span class="w"> </span><span class="c1">--&gt; P2</span>
+<span class="w">    </span><span class="n">D3</span><span class="w"> </span><span class="c1">--&gt; P1</span>
+<span class="w">    </span><span class="n">D4</span><span class="w"> </span><span class="c1">--&gt; P1</span>
+
+<span class="w">    </span><span class="n">P1</span><span class="w"> </span><span class="c1">--&gt; M1</span>
+<span class="w">    </span><span class="n">M1</span><span class="w"> </span><span class="c1">--&gt; P2</span>
+<span class="w">    </span><span class="n">P2</span><span class="w"> </span><span class="c1">--&gt; M2</span>
+<span class="w">    </span><span class="n">M2</span><span class="w"> </span><span class="c1">--&gt; P3</span>
+<span class="w">    </span><span class="n">P3</span><span class="w"> </span><span class="c1">--&gt; M3</span>
+<span class="w">    </span><span class="n">M3</span><span class="w"> </span><span class="c1">--&gt; P4</span>
+<span class="w">    </span><span class="n">P4</span><span class="w"> </span><span class="c1">--&gt; M4</span>
+<span class="w">    </span><span class="n">M4</span><span class="w"> </span><span class="c1">--&gt; P5</span>
+<span class="w">    </span><span class="n">P5</span><span class="w"> </span><span class="c1">--&gt; M5</span>
+<span class="w">    </span><span class="n">M5</span><span class="w"> </span><span class="c1">--&gt; P6</span>
+
+<span class="w">    </span><span class="n">P6</span><span class="w"> </span><span class="c1">--&gt; F1</span>
+<span class="w">    </span><span class="n">P6</span><span class="w"> </span><span class="c1">--&gt; F2</span>
+<span class="w">    </span><span class="n">P6</span><span class="w"> </span><span class="c1">--&gt; F3</span>
+
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P1</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#E8F4F8</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P2</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFF4E6</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P3</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#F0E6FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P4</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#FFE6F0</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P5</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#E6F7FF</span>
+<span class="w">    </span><span class="n">style</span><span class="w"> </span><span class="n">P6</span><span class="w"> </span><span class="nl">fill</span><span class="p">:</span><span class="n">#F0FFF0</span>
+</code></pre></div>
+
+<hr />
+<h2 id="_1">图表说明</h2>
+<h3 id="1_1">1. 系统总览架构图</h3>
+<p>展示了整个系统的三层架构:知识层、智能体层、输入输出层,以及它们之间的数据流动关系。</p>
+<h3 id="2_1">2. 工作流时序图</h3>
+<p>详细描述了从用户输入到最终交付的完整时序流程,包括各智能体之间的协作关系。</p>
+<h3 id="3_1">3. 提示词框架映射矩阵</h3>
+<p>将21种提示词框架中的6种核心框架映射到对应的设计阶段,展示每个框架的具体组成要素。</p>
+<h3 id="4">4. 知识分发机制</h3>
+<p>展示TRACE框架如何将外部知识转化为可执行的参数卡片,并分发给相应的智能体。</p>
+<h3 id="5_1">5. 摄影美学控制系统</h3>
+<p>详细说明摄影参数(焦段、光圈、构图、移轴)如何控制最终的视觉输出质量。</p>
+<h3 id="6_1">6. 六大智能体详细架构</h3>
+<p>使用思维导图形式展示每个智能体的框架、能力和输出。</p>
+<h3 id="7_1">7. 系统数据流图</h3>
+<p>从数据角度展示整个系统的输入、处理、中间产物和最终交付的流转过程。</p>
+<hr />
+<p><strong>使用说明</strong>: 这些 Mermaid 图表可以直接在支持 Mermaid 的 Markdown 编辑器中渲染,如 Obsidian、Typora、GitHub 等。</p>
+    
+    <script>
+        // 等待 Mermaid 图表渲染完成后再打印
+        window.addEventListener('load', function() {
+            console.log('页面加载完成,Mermaid 图表已渲染');
+        });
+    </script>
+</body>
+</html>
