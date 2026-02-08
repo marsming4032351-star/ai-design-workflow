@@ -23,6 +23,20 @@ description: 视觉艺术家 (The Stylist) - 采用 CARE 框架进行材质迁�
 - 3D 透视图(来自 design-architect)
 - 风格参考图片
 - 材质和氛围要求
+- **相关的知识卡片** (从 `knowledge-base/cases/` 检索)
+
+---
+
+### 第零步: 知识库检索与自省 (Knowledge Retrieval)
+
+在开始设计前，**必须执行以下自省步骤**：
+
+1. **扫描索引**: 检查 `knowledge-base/knowledge-index.json` 或直接搜索 `/Users/ming/Desktop/ai-design-workflow/knowledge-base/cases/`。
+2. **寻找相关性**: 查找是否有与当前项目需求风格一致、材质相似或空间类型相同的历史案例。
+3. **加载 Few-shot 示例**: 
+   - 读取相关案例卡片的内容。
+   - 提取其中的“3. 智能体指令”部分作为当前的执行参考。
+   - 确保材质 PBR 参数和色值的一致性。
 
 ### 处理步骤
 
@@ -227,4 +241,5 @@ description: 视觉艺术家 (The Stylist) - 采用 CARE 框架进行材质迁�
 ## 与其他智能体协作
 
 - **接收自 design-architect**: 3D 透视图、基础材质
+- **参考自 knowledge-base**: 历史案例参数、Few-shot 样式样张
 - **传递给 design-photographer**: 优化后的效果图、材质和灯光设置
